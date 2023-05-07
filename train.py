@@ -12,7 +12,7 @@ BATCH_SIZE = 40
 TOTAL_EPOCH = 80
 LR = 1e-3
 
-TARGET = torch.tensor([600], dtype=torch.float).to(DEVICE)
+TARGET = torch.tensor([200], dtype=torch.float).to(DEVICE)
 LOSSES = []
 
 
@@ -36,8 +36,8 @@ def fit(sc: SupplyChain):
 
 def main():
     sc = SupplyChain(configs=CONFIGS)
-    # for saler in sc.salers:
-    #     saler._model.load_state_dict(torch.load(f"./pre_models/{saler._id}_weight.pth"))
+    for saler in sc.salers:
+        saler._model.load_state_dict(torch.load(f"./pre_models/{saler._id}_weight.pth"))
     dt = DataSet(BATCH_SIZE)
     max_avg_profit = 0
     max_profit = 0
