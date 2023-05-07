@@ -12,22 +12,22 @@ BATCH_SIZE = 40
 TOTAL_EPOCH = 80
 LR = 1e-3
 
-TARGET = torch.tensor([100], dtype=torch.float).to(DEVICE)
+TARGET = torch.tensor([600], dtype=torch.float).to(DEVICE)
 LOSSES = []
 
 
 def fit(sc: SupplyChain):
     global TARGET, LOSSES
     loss_fn = nn.MSELoss()
-    optimizer = torch.optim.Adam(
+    optimizer = torch.optim.SGD(
         chain(*[saler._model.parameters() for saler in sc.salers]), lr=LR
     )
     TARGET = torch.tensor(
         [max(TARGET.item(), sc.total_profit.item() * 1.2)], dtype=torch.float
     ).to(DEVICE)
-    # loss = loss_fn(sc.salers[0]._profit / TARGET, torch.ones(1).to(DEVICE))
+    loss = loss_fn(sc.salers[0]._profit / TARGET, torch.ones(1).to(DEVICE))
     loss = loss_fn(sc.total_profit / TARGET, torch.ones(1).to(DEVICE))
-    print(loss.item())
+    # print(loss.item())
     LOSSES.append(loss.item())
     optimizer.zero_grad()
     loss.backward()
@@ -36,6 +36,8 @@ def fit(sc: SupplyChain):
 
 def main():
     sc = SupplyChain(configs=CONFIGS)
+    for saler in sc.salers:
+        saler._model.load_state_dict(torch.load(f"./pre_models/{saler._id}_weight.pth"))
     dt = DataSet(BATCH_SIZE)
     max_avg_profit = 0
     max_profit = 0
@@ -51,15 +53,17 @@ def main():
             max_profit = max(max_profit, sc.total_profit.item())
             fit(sc)
             sc.init()
-        print("epoch:", epoch)
+        print("epoch:", epoch, "finished")
         avg_profit = profits / BATCH_SIZE
+        print("current_avg_profit:", avg_profit)
         if avg_profit > max_avg_profit:
             max_avg_profit = avg_profit
             best_models = dict(
                 [(saler._id, saler._model.state_dict()) for saler in sc.salers]
             )
-        print("=" * 100, "max_avg_profit:", max_avg_profit)
-        print("=" * 100, "max_profit:", max_profit)
+        print("max_avg_profit:", max_avg_profit)
+        print("max_profit:", max_profit)
+        print("TARGET:", TARGET.item())
 
     if not os.path.exists("./models"):
         os.makedirs("./models")
@@ -76,7 +80,7 @@ def main():
 
 if __name__ == '__main__':
     logging.basicConfig(
-        filename="chain.log", filemode='w', encoding="utf-8", level=logging.INFO
+        filename="chain.log", filemode='w', encoding="utf-8", level=logging.DEBUG
     )
     main()
     print("log here: ./chain.log")

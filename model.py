@@ -26,7 +26,7 @@ class Model(nn.Module):
         out, _ = self.lstm(x.view(1,-1))
         out = self.linear(out).view(-1)
         out = self.relu(out)
-        return out * 30
+        return out * 40
 
 
 def new_model() -> Model:
