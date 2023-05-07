@@ -104,6 +104,7 @@ class Saler:
         self._log = {}
         self._stocker = Storehouse(id, initial_stock)
         self._model = model.new_model()
+        self._model.train()
         self._profit = torch.zeros(1).to(DEVICE)  # 利润
         self._selling_price = torch.tensor([selling_price], dtype=torch.float).to(
             DEVICE
@@ -149,27 +150,15 @@ class Saler:
             logging.debug(
                 f"{self._id} deliver to {order_party._id} number {afford_num.item()}"
             )
+        else:
+            logging.debug(f"{self._id} deliver to customer number {afford_num.item()}")
 
     def _order(self, order_form: OrderForm) -> torch.Tensor:
         order_num = order_form.order_num
-        self._model.train()
-        new_order_num: torch.Tensor = self._model(
-            torch.tensor(
-                [
-                    self.stock,
-                    order_num,
-                    self._selling_price,
-                    self._purchase_price,
-                    self._stock_price,
-                    self._compensation,
-                    self._handling_fee,
-                ],
-                dtype=torch.float,
-            ).to(DEVICE)
-        )
+        new_order_num: torch.Tensor = self.predict_order(order_num=order_num)
         self._profit -= (
             self._purchase_price * new_order_num + self._handling_fee
-            if new_order_num
+            if new_order_num  # tensor with only one element can be turned into a boolean implicitly
             else 0 * new_order_num
         )
         if self._next:
@@ -203,6 +192,22 @@ class Saler:
     def epoch(self, order_form: OrderForm):
         self._epoch_num += 1
         self._process(order_form)
+
+    def predict_order(self, order_num: torch.Tensor):
+        return self._model(
+            torch.tensor(
+                [
+                    self.stock,
+                    order_num,
+                    self._selling_price,
+                    self._purchase_price,
+                    self._stock_price,
+                    self._compensation,
+                    self._handling_fee,
+                ],
+                dtype=torch.float,
+            ).to(DEVICE)
+        )
 
     @property
     def stocker(self):
