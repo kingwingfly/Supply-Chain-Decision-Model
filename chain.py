@@ -133,6 +133,7 @@ class Saler:
         afford_num = self._afford_num(order_form.order_num)
         order_num = order_form.order_num if order_party else afford_num
         self.stocker.get(order_num)
+        # because stock increasement happens **after** paying although stock decreasement happens while being paid, so cannot use setter's side effect to modify the profit here
         self._profit += self._selling_price * order_num
         self._profit -= (
             self._stock_price
@@ -172,7 +173,7 @@ class Saler:
             self.stocker.put(new_order_num)
             logging.debug(f"product number {new_order_num.item()}")
 
-    def _afford_num(self, order_num: torch.Tensor):
+    def _afford_num(self, order_num: torch.Tensor) -> torch.Tensor:
         return torch.max(
             torch.stack(
                 (

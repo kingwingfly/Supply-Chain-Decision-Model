@@ -6,12 +6,13 @@ import logging
 from itertools import chain
 from data_gen import DataSet
 import matplotlib.pyplot as plt
+import os
 
 BATCH_SIZE = 40
 TOTAL_EPOCH = 80
 LR = 1e-3
 
-TARGET = torch.tensor([0], dtype=torch.float).to(DEVICE)
+TARGET = torch.tensor([100], dtype=torch.float).to(DEVICE)
 LOSSES = []
 
 
@@ -22,7 +23,7 @@ def fit(sc: SupplyChain):
         chain(*[saler._model.parameters() for saler in sc.salers]), lr=LR
     )
     TARGET = torch.tensor(
-        [max(TARGET.item(), abs(sc.total_profit.item()) * 1.2)], dtype=torch.float
+        [max(TARGET.item(), sc.total_profit.item() * 1.2)], dtype=torch.float
     ).to(DEVICE)
     # loss = loss_fn(sc.salers[0]._profit / TARGET, torch.ones(1).to(DEVICE))
     loss = loss_fn(sc.total_profit / TARGET, torch.ones(1).to(DEVICE))
@@ -59,6 +60,9 @@ def main():
             )
         print("=" * 100, "max_avg_profit:", max_avg_profit)
         print("=" * 100, "max_profit:", max_profit)
+
+    if not os.path.exists("./models"):
+        os.makedirs("./models")
     for id_, state_dict in best_models.items():
         torch.save(state_dict, f"./models/{id_}_weight.pth")
     logging.info("models saved")
@@ -76,4 +80,3 @@ if __name__ == '__main__':
     )
     main()
     print("log here: ./chain.log")
-
