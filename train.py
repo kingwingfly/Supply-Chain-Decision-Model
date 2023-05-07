@@ -19,7 +19,7 @@ LOSSES = []
 def fit(sc: SupplyChain):
     global TARGET, LOSSES
     loss_fn = nn.MSELoss()
-    optimizer = torch.optim.SGD(
+    optimizer = torch.optim.Adam(
         chain(*[saler._model.parameters() for saler in sc.salers]), lr=LR
     )
     TARGET = torch.tensor(
