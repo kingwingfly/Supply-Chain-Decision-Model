@@ -22,9 +22,9 @@ def fit(sc: SupplyChain):
     optimizer = torch.optim.SGD(
         chain(*[saler._model.parameters() for saler in sc.salers]), lr=LR
     )
-    TARGET = torch.tensor(
-        [max(TARGET.item(), sc.total_profit.item() * 1.2)], dtype=torch.float
-    ).to(DEVICE)
+    # TARGET = torch.tensor(
+    #     [max(TARGET.item(), sc.total_profit.item() * 1.2)], dtype=torch.float
+    # ).to(DEVICE)
     loss = loss_fn(sc.salers[0]._profit / TARGET, torch.ones(1).to(DEVICE))
     loss = loss_fn(sc.total_profit / TARGET, torch.ones(1).to(DEVICE))
     # print(loss.item())
@@ -35,6 +35,7 @@ def fit(sc: SupplyChain):
 
 
 def main():
+    global TARGET
     sc = SupplyChain(configs=CONFIGS)
     # for saler in sc.salers:
     #     saler._model.load_state_dict(torch.load(f"./pre_models/{saler._id}_weight.pth"))
@@ -63,6 +64,9 @@ def main():
             )
         print("max_avg_profit:", max_avg_profit)
         print("max_profit:", max_profit)
+        TARGET = torch.tensor(
+            [max(TARGET.item(), max_avg_profit * 1.2)], dtype=torch.float
+        ).to(DEVICE)
         print("TARGET:", TARGET.item())
 
     if not os.path.exists("./models"):
