@@ -1,76 +1,59 @@
 import torch
 from torch import nn
-from chain import SupplyChain, CONFIGS
-from model import DEVICE
+from chain import SupplyChain
 import logging
 from itertools import chain
-from data_gen import DataSet
+from dataset import new_dataloader
 import matplotlib.pyplot as plt
 import os
+from conf import DEVICE
 
-BATCH_SIZE = 40
-TOTAL_EPOCH = 10
+BATCH_SIZE = 12
+DATA_SIZE = 120
+TOTAL_EPOCH = 20
 LR = 1e-3
 
-TARGET = torch.tensor([200], dtype=torch.float).to(DEVICE)
-CURRENT_EPOCH = 1
-
-
-def fit(sc: SupplyChain):
-    global TARGET
-    loss_fn = nn.MSELoss()
-    optimizer = torch.optim.SGD(
-        chain(*[saler._model.parameters() for saler in sc.salers]), lr=LR
-    )
-    TARGET = torch.tensor(
-        [max(TARGET.item(), sc.total_profit.item() * 1.2)], dtype=torch.float
-    ).to(DEVICE)
-    # loss = loss_fn(sc.salers[0]._profit / TARGET, torch.ones(1).to(DEVICE))
-    loss = loss_fn(sc.total_profit / TARGET, torch.ones(1).to(DEVICE))
-    # print(loss.item())
-    plt.scatter(CURRENT_EPOCH, loss.item(), c="black", s=3)
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
+TARGET = torch.tensor([100], dtype=torch.float).to(DEVICE)
+PRE_TRAINED = False
 
 
 def main():
-    global CURRENT_EPOCH
-    sc = SupplyChain(configs=CONFIGS)
-    for saler in sc.salers:
-        saler._model.load_state_dict(torch.load(f"./models/{saler._id}_weight.pth"))
-    dt = DataSet(BATCH_SIZE)
+    global TARGET
+    sc = SupplyChain()
+    if PRE_TRAINED:
+        sc.load_state_dict(torch.load("./pre_models/weight.pth"))
+    dt = new_dataloader(DATA_SIZE, BATCH_SIZE)
+    loss_fn = nn.MSELoss()
+    optimizer = torch.optim.Adam(sc.parameters(), lr=LR)
     max_avg_profit = 0
-    max_profit = 0
-    best_models = {}
-    for _ in range(TOTAL_EPOCH):
+    best_model = {}
+    sc.train()
+    for epoch_num in range(TOTAL_EPOCH):
         profits = 0
-        for predict_demand in dt:
-            for demand in predict_demand:
-                sc.order(demand=demand)
-                logging.info('\n' + str(sc))
-            logging.info('total profit:' + str(sc.total_profit.item()))
-            profits += sc.total_profit.item()
-            max_profit = max(max_profit, sc.total_profit.item())
-            fit(sc)
+        for batch_id, demands in enumerate(dt):
+            total_profit = sc(demands)
+            profits += total_profit.item()
+            loss = loss_fn(total_profit / TARGET, torch.ones(1).to(DEVICE))
+            plt.scatter(epoch_num, loss.item(), c="black", s=3)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
             sc.init()
-        print("epoch:", CURRENT_EPOCH, "finished")
-        CURRENT_EPOCH += 1
-        avg_profit = profits / BATCH_SIZE
-        print("current_avg_profit:", avg_profit)
+            print(
+                f"epoch num: {epoch_num}\t total_profit: {total_profit.item():.2f}\t loss: {loss.item():.4f}"
+            )
+        avg_profit = profits / (DATA_SIZE // BATCH_SIZE)
         if avg_profit > max_avg_profit:
             max_avg_profit = avg_profit
-            best_models = dict(
-                [(saler._id, saler._model.state_dict()) for saler in sc.salers]
-            )
-        print("max_avg_profit:", max_avg_profit)
-        print("max_profit:", max_profit)
-        print("TARGET:", TARGET.item())
+            TARGET = torch.tensor(
+                max(TARGET.item(), avg_profit * 1.2), dtype=torch.float
+            ).to(DEVICE)
+            best_model = sc.state_dict()
+        print(avg_profit)
 
     if not os.path.exists("./models"):
         os.makedirs("./models")
-    for id_, state_dict in best_models.items():
-        torch.save(state_dict, f"./models/{id_}_weight.pth")
+    torch.save(best_model, f"./models/weight.pth")
     logging.info("models saved")
     plt.savefig("./losses.png")
     logging.info("losses saved")

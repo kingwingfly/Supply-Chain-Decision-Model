@@ -1,4 +1,5 @@
-from chain import SupplyChain, CONFIGS, DEVICE
+from chain import SupplyChain, CONFIGS
+from conf import DEVICE
 import torch
 
 
