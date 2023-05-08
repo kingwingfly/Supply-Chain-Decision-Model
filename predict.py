@@ -12,7 +12,7 @@ if __name__ == "__main__":
     # predict
     epoch_num = 1
     while demand := torch.tensor([eval(input("The customer demand:"))], dtype=torch.float).to(DEVICE):
-        print(f"\nepoch num: {epoch_num}")
+        print(f"epoch num: {epoch_num}")
         for saler in sc.salers:
             result = saler.predict_order(demand)
             print(f"{saler._id} should order number {result.item()}")
@@ -20,4 +20,5 @@ if __name__ == "__main__":
         print(f"total profit:\t {sc.total_profit.item():.2f}")
         for saler in sc.salers:
             print(f"{saler._id}'s profit: {saler.profit.item():.2f}")
+        print('\n')
         epoch_num += 1

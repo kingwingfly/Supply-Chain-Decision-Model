@@ -9,15 +9,15 @@ import matplotlib.pyplot as plt
 import os
 
 BATCH_SIZE = 40
-TOTAL_EPOCH = 80
+TOTAL_EPOCH = 10
 LR = 1e-3
 
 TARGET = torch.tensor([200], dtype=torch.float).to(DEVICE)
-LOSSES = []
+CURRENT_EPOCH = 1
 
 
 def fit(sc: SupplyChain):
-    global TARGET, LOSSES
+    global TARGET
     loss_fn = nn.MSELoss()
     optimizer = torch.optim.SGD(
         chain(*[saler._model.parameters() for saler in sc.salers]), lr=LR
@@ -28,22 +28,22 @@ def fit(sc: SupplyChain):
     # loss = loss_fn(sc.salers[0]._profit / TARGET, torch.ones(1).to(DEVICE))
     loss = loss_fn(sc.total_profit / TARGET, torch.ones(1).to(DEVICE))
     # print(loss.item())
-    LOSSES.append(loss.item())
+    plt.scatter(CURRENT_EPOCH, loss.item(), c="black", s=3)
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
 
 
 def main():
-    global TARGET
+    global CURRENT_EPOCH
     sc = SupplyChain(configs=CONFIGS)
-    # for saler in sc.salers:
-    #     saler._model.load_state_dict(torch.load(f"./pre_models/{saler._id}_weight.pth"))
+    for saler in sc.salers:
+        saler._model.load_state_dict(torch.load(f"./models/{saler._id}_weight.pth"))
     dt = DataSet(BATCH_SIZE)
     max_avg_profit = 0
     max_profit = 0
     best_models = {}
-    for epoch in range(TOTAL_EPOCH):
+    for _ in range(TOTAL_EPOCH):
         profits = 0
         for predict_demand in dt:
             for demand in predict_demand:
@@ -54,7 +54,8 @@ def main():
             max_profit = max(max_profit, sc.total_profit.item())
             fit(sc)
             sc.init()
-        print("epoch:", epoch, "finished")
+        print("epoch:", CURRENT_EPOCH, "finished")
+        CURRENT_EPOCH += 1
         avg_profit = profits / BATCH_SIZE
         print("current_avg_profit:", avg_profit)
         if avg_profit > max_avg_profit:
@@ -71,10 +72,6 @@ def main():
     for id_, state_dict in best_models.items():
         torch.save(state_dict, f"./models/{id_}_weight.pth")
     logging.info("models saved")
-    for x in range(TOTAL_EPOCH):
-        ys = LOSSES[BATCH_SIZE * x : BATCH_SIZE * (x + 1)]
-        for y in ys:
-            plt.scatter(x, y, c="black", s=3)
     plt.savefig("./losses.png")
     logging.info("losses saved")
 
