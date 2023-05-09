@@ -5,14 +5,12 @@ import logging
 from torch import nn
 from torch.nn.parameter import Parameter
 from conf import DEVICE, DEMAND_RANGE, CONFIGS
-from itertools import chain
 
 
 class OrderForm:
     def __init__(self, ordering_party: Saler | None, order_num: torch.Tensor) -> None:
         self.ordering_party = ordering_party
         self._order_num = order_num
-        # logging.debug(self)
 
     def __str__(self) -> str:
         return f'OrderForm from saler id:{self.ordering_party._id if self.ordering_party else None}\t ordering number is {self.order_num.item()}'

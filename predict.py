@@ -4,20 +4,21 @@ import torch
 
 
 if __name__ == "__main__":
-    sc = SupplyChain(CONFIGS)
+    sc = SupplyChain()
     # init
-    for saler in sc.salers:
-        saler._model.load_state_dict(torch.load(f"./models/{saler._id}_weight.pth"))
-        saler._model.eval
+    sc.load_state_dict(torch.load(f"./models/weight.pth"))
+    sc.eval()
 
     # predict
     epoch_num = 1
-    while demand := torch.tensor([eval(input("The customer demand:"))], dtype=torch.float).to(DEVICE):
+    while demands := torch.tensor(
+        [[eval(input("The customer demand:"))]], dtype=torch.float
+    ).to(DEVICE):
         print(f"epoch num: {epoch_num}")
         for saler in sc.salers:
-            result = saler.predict_order(demand)
+            result = saler.predict_order(demands)
             print(f"{saler._id} should order number {result.item()}")
-        sc.order(demand=demand)
+        sc(demands)
         print(f"total profit:\t {sc.total_profit.item():.2f}")
         for saler in sc.salers:
             print(f"{saler._id}'s profit: {saler.profit.item():.2f}")
