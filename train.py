@@ -41,7 +41,7 @@ def main():
             logging.info(
                 f"epoch num: {epoch_num}\t total_profit: {total_profit.item():.2f}\t loss: {loss.item():.4f}"
             )
-        avg_profit = profits / (DATA_SIZE // BATCH_SIZE)
+        avg_profit = profits / (DATA_SIZE // BATCH_SIZE + 1)
         logging.info(f"epoch num: {epoch_num}\t avg_profit: {avg_profit:.2f}")
         print(f"epoch num: {epoch_num}\t avg_profit: {avg_profit:.2f}")
         if avg_profit > max_avg_profit:
@@ -56,7 +56,7 @@ def main():
             total_profit = sc(demands)
             profits += total_profit.item()
             sc.init()
-        print(f"valid avg_profit: {profits / (DATA_SIZE // BATCH_SIZE):.2f}")
+        print(f"valid avg_profit: {profits / (DATA_SIZE // BATCH_SIZE + 1):.2f}")
 
     if 'y' == input("save model?[y/N]\t").strip().lower():
         save(best_model)
