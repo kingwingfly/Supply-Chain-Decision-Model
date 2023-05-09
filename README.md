@@ -124,7 +124,7 @@ The loss image:
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
+<!-- 
 
 Due to `MSELOSS` and this mutative optimization target:
 
@@ -136,7 +136,7 @@ Due to `MSELOSS` and this mutative optimization target:
 ```
 
 The final loss should be:
-$(1 - \dfrac{1}{1.2})^2 = 0.028$
+$(1 - \dfrac{1}{1.2})^2 = 0.028$ -->
 
 <!-- ROADMAP -->
 ## Roadmap

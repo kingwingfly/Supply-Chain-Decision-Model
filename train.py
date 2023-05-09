@@ -6,42 +6,44 @@ from dataset import new_dataloader
 import matplotlib.pyplot as plt
 import os
 from conf import DEVICE
+import math
 
 BATCH_SIZE = 12
 DATA_SIZE = 360
-TOTAL_EPOCH = 10
+TOTAL_EPOCH = 30
 LR = 1e-3
 
-PRE_TRAINED = True
+PRE_TRAINED = False
 
 
 def main():
-    global TARGET
-    sc = SupplyChain()
+    sc = SupplyChain().to(DEVICE)
     if PRE_TRAINED:
         sc.load_state_dict(torch.load("./models/weight.pth"))
     train_dl = new_dataloader(DATA_SIZE, BATCH_SIZE)
     valid_dl = new_dataloader(DATA_SIZE, BATCH_SIZE)
-    loss_fn = nn.MSELoss()
+    loss_fn = lambda x: -x
     optimizer = torch.optim.Adam(sc.parameters(), lr=LR)
     max_avg_profit = 0
     best_model = {}
     for epoch_num in range(TOTAL_EPOCH):
         profits = 0
         sc.train()
-        for _, demands in enumerate(train_dl):
+        for batch_id, demands in enumerate(train_dl):
             total_profit = sc(demands)
             profits += total_profit.item()
-            loss = -total_profit
+            loss = loss_fn(total_profit)
+            # loss = loss_fn(sc.salers[0]._profit)
             plt.scatter(epoch_num, loss.item(), c="black", s=3)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             sc.init()
             logging.info(
-                f"epoch num: {epoch_num}\t total_profit: {total_profit.item():.2f}\t loss: {loss.item():.4f}"
+                f"epoch num: {epoch_num}\t batch_id: {batch_id}, total_profit: {total_profit.item():.2f}\t loss: {loss.item():.4f}"
             )
-        avg_profit = profits / (DATA_SIZE // BATCH_SIZE + 1)
+
+        avg_profit = profits / (math.ceil(DATA_SIZE / BATCH_SIZE))
         logging.info(f"epoch num: {epoch_num}\t avg_profit: {avg_profit:.2f}")
         print(f"epoch num: {epoch_num}\t avg_profit: {avg_profit:.2f}")
         if avg_profit > max_avg_profit:
@@ -56,7 +58,7 @@ def main():
             total_profit = sc(demands)
             profits += total_profit.item()
             sc.init()
-        print(f"valid avg_profit: {profits / (DATA_SIZE // BATCH_SIZE + 1):.2f}")
+        print(f"valid avg_profit: {profits / math.ceil(DATA_SIZE / BATCH_SIZE):.2f}")
 
     if 'y' == input("save model?[y/N]\t").strip().lower():
         save(best_model)
@@ -73,7 +75,7 @@ def save(best_model):
 
 if __name__ == '__main__':
     logging.basicConfig(
-        filename="chain.log", filemode='w', encoding="utf-8", level=logging.DEBUG
+        filename="train.log", filemode='w', encoding="utf-8", level=logging.DEBUG
     )
     main()
-    print("log here: ./chain.log")
+    print("log here: ./train.log")

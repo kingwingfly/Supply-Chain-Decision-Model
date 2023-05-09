@@ -65,9 +65,11 @@ class Saler(nn.Module):
         self._epoch_num = 0
         self._log = {}
         self._stocker = Storehouse(id, initial_stock)
+
         self.lstm = nn.LSTM(7, 8)
         self.linear = nn.Linear(8, 1)
         self.relu = nn.ReLU()
+
         self._profit = torch.zeros(1).to(DEVICE)  # 利润
         self._selling_price = torch.tensor([selling_price], dtype=torch.float).to(
             DEVICE
@@ -207,6 +209,8 @@ class SupplyChain(nn.Module):
         for demand in demands:
             order_form = OrderForm(None, demand)
             self.salers[0](order_form=order_form)
+            logging.debug('\n' + str(self))
+            logging.debug(f"total profit: {self.total_profit.item():.2f}")
         return self.total_profit
 
     def parameters(self, recurse: bool = True) -> Iterator[Parameter]:
