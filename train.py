@@ -8,9 +8,9 @@ import os
 from conf import DEVICE
 import math
 
-BATCH_SIZE = 8
+BATCH_SIZE = 12
 DATA_SIZE = 120
-TOTAL_EPOCH = 10
+TOTAL_EPOCH = 40
 LR = 1e-3
 
 PRE_TRAINED = True
@@ -53,13 +53,13 @@ def main():
         logging.info(f"epoch num: {epoch_num}\t max_avg_profit: {max_avg_profit:.2f}")
         print(f"epoch_num: {epoch_num}\t max_avg_profit: {max_avg_profit:.2f}")
 
-        # sc.eval()
-        # profits = 0
-        # for _, demands in enumerate(valid_dl):
-        #     total_profit = sc(demands)
-        #     profits += total_profit.item()
-        #     sc.init()
-        # print(f"valid avg_profit: {profits / math.ceil(DATA_SIZE / BATCH_SIZE):.2f}")
+        sc.eval()
+        profits = 0
+        for _, demands in enumerate(valid_dl):
+            total_profit = sc(demands)
+            profits += total_profit.item()
+            sc.init()
+        print(f"valid avg_profit: {profits / math.ceil(DATA_SIZE / BATCH_SIZE):.2f}")
 
     if 'y' == input("save model?[y/N]\t").strip().lower():
         save_model(best_model)

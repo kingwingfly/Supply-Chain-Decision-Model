@@ -120,23 +120,16 @@ And maybe you need this [torch quick start](https://pytorch.org/get-started/loca
    ```
 
 The loss image:
-<img align="center" src="static/losses.png" width="100%">
+<img align="center" src="static/losses example1.png" width="100%">
+<img align="center" src="static/losses example2.png" width="100%">
+<img align="center" src="static/losses example3.png" width="100%">
+
+
+You can find the loss become more and more dispersed, while the average is greater. 
+Considering the results, the purpose of optimizing decision-making is achieved.
+Further, you could optimize the input (The data I test on is randomly uniform ditribution between 10 and 400) in more subtle way.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- 
-
-Due to `MSELOSS` and this mutative optimization target:
-
-
-```python
- TARGET = torch.tensor(
-      [max(TARGET.item(), sc.total_profit.item() * 1.2)], dtype=torch.float
-  ).to(DEVICE)
-```
-
-The final loss should be:
-$(1 - \dfrac{1}{1.2})^2 = 0.028$ -->
 
 <!-- ROADMAP -->
 ## Roadmap

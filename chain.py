@@ -3,8 +3,7 @@ from typing import Iterator
 import torch
 import logging
 from torch import nn
-from torch.nn.parameter import Parameter
-from conf import DEVICE, DEMAND_RANGE, CONFIGS
+from conf import DEVICE, CONFIGS
 
 
 class Storehouse:
@@ -52,7 +51,11 @@ class Saler(nn.Module):
         self._stocker = Storehouse(id, initial_stock)
 
         self.lstm = nn.LSTM(8, 8)
-        self.fc = nn.Sequential(nn.Linear(8, 1), nn.ReLU())
+        self.fc = nn.Sequential(
+            nn.Linear(8, 1),
+            nn.ReLU(),
+        )
+        self.apply(self._init_weights)
 
         self._profit = torch.zeros(1).to(DEVICE)  # 利润
         self._selling_price = torch.tensor([selling_price], dtype=torch.float).to(
@@ -64,10 +67,16 @@ class Saler(nn.Module):
         self._stock_price = torch.tensor([stock_price], dtype=torch.float).to(DEVICE)
         self._compensation = torch.tensor([compensation], dtype=torch.float).to(DEVICE)
         self._handling_fee = torch.tensor([handling_fee], dtype=torch.float).to(DEVICE)
-        # For salers are connected to each other, 
-        # if do not wrap the next and prev saler with list, 
+        # For salers are connected to each other,
+        # if do not wrap the next and prev saler with list,
         # the parameters() or state_dict() method will lead infinite recursion
         self._p_n: list[Saler] = []
+
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            torch.nn.init.xavier_uniform_(module.weight, gain=50)
+            if module.bias is not None:
+                module.bias.data.zero_()
 
     def init(self):
         self._epoch_num = 0

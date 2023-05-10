@@ -4,7 +4,7 @@ import torch
 
 
 if __name__ == "__main__":
-    sc = SupplyChain()
+    sc = SupplyChain().to(DEVICE)
     # init
     sc.load_state_dict(torch.load(f"./models/weight.pth"))
     sc.eval()
