@@ -7,19 +7,6 @@ from torch.nn.parameter import Parameter
 from conf import DEVICE, DEMAND_RANGE, CONFIGS
 
 
-class OrderForm:
-    def __init__(self, ordering_party: Saler | None, order_num: torch.Tensor) -> None:
-        self.ordering_party = ordering_party
-        self._order_num = order_num
-
-    def __str__(self) -> str:
-        return f'OrderForm from saler id:{self.ordering_party._id if self.ordering_party else None}\t ordering number is {self.order_num.item()}'
-
-    @property
-    def order_num(self):
-        return self._order_num
-
-
 class Storehouse:
     def __init__(
         self,
@@ -58,17 +45,14 @@ class Saler(nn.Module):
         stock_price: float,
         compensation: float,
         handling_fee: float | int,
-        next: Saler | None,
     ) -> None:
         super().__init__()
         self._id = id
         self._epoch_num = 0
-        self._log = {}
         self._stocker = Storehouse(id, initial_stock)
 
-        self.lstm = nn.LSTM(7, 8)
-        self.linear = nn.Linear(8, 1)
-        self.relu = nn.ReLU()
+        self.lstm = nn.LSTM(8, 8)
+        self.fc = nn.Sequential(nn.Linear(8, 1), nn.ReLU())
 
         self._profit = torch.zeros(1).to(DEVICE)  # 利润
         self._selling_price = torch.tensor([selling_price], dtype=torch.float).to(
@@ -80,7 +64,10 @@ class Saler(nn.Module):
         self._stock_price = torch.tensor([stock_price], dtype=torch.float).to(DEVICE)
         self._compensation = torch.tensor([compensation], dtype=torch.float).to(DEVICE)
         self._handling_fee = torch.tensor([handling_fee], dtype=torch.float).to(DEVICE)
-        self._next = next
+        # For salers are connected to each other, 
+        # if do not wrap the next and prev saler with list, 
+        # the parameters() or state_dict() method will lead infinite recursion
+        self._p_n: list[Saler] = []
 
     def init(self):
         self._epoch_num = 0
@@ -91,12 +78,12 @@ class Saler(nn.Module):
     #     return f"{self._id}"
 
     def __str__(self) -> str:
-        return f"id: {self._id}\t stock: {self.stock.item():.0f}\t profit: {self.profit.item():.2f}\t next saler id: {self._next._id if self._next else None}"
+        return f"id: {self._id}\t stock: {self.stock.item():.0f}\t profit: {self.profit.item():.2f}\t next saler id: {self._next._id if self._next else None} prev saler id: {self._prev._id if self._prev else None}"
 
-    def _deliver(self, order_form: OrderForm):
-        order_party = order_form.ordering_party
-        afford_num = self._afford_num(order_form.order_num)
-        order_num = order_form.order_num if order_party else afford_num
+    def _deliver(self, demand: torch.Tensor):
+        order_party = self._prev
+        afford_num = self._afford_num(demand)
+        order_num = demand if order_party else afford_num
         self.stocker.get(order_num)
         # because stock increasement happens **after** paying although stock decreasement happens while being paid, so cannot use setter's side effect to modify the profit here
         self._profit += self._selling_price * order_num
@@ -119,8 +106,8 @@ class Saler(nn.Module):
         else:
             logging.debug(f"{self._id} deliver to customer number {afford_num.item()}")
 
-    def _order(self, order_form: OrderForm) -> torch.Tensor:
-        order_num = order_form.order_num
+    def _order(self, demand: torch.Tensor) -> torch.Tensor:
+        order_num = demand
         new_order_num: torch.Tensor = self.predict_order(order_num=order_num)
         self._profit -= (
             self._purchase_price * new_order_num + self._handling_fee
@@ -128,11 +115,11 @@ class Saler(nn.Module):
             else 0 * new_order_num
         )
         if self._next:
-            new_order_form = OrderForm(ordering_party=self, order_num=new_order_num)
             logging.debug(
                 f"{self._id} order from {self._next._id} number {new_order_num.item()}"
             )
-            self._next.forward(new_order_form)
+            # self._next.forward(new_order_num)
+            return new_order_num
         else:
             # The final one
             self.stocker.put(new_order_num)
@@ -149,19 +136,20 @@ class Saler(nn.Module):
             0,
         )[0]
 
-    def _process(self, order_form: OrderForm):
-        self._deliver(order_form)
+    def _process(self, demand: torch.Tensor):
+        self._deliver(demand)
         # print("after deliver", self._id, self._profit.item())
-        self._order(order_form)
+        return self._order(demand)
         # print("after order", self._id, self._profit.item())
 
-    def forward(self, order_form: OrderForm):
+    def forward(self, demand: torch.Tensor):
         self._epoch_num += 1
-        self._process(order_form)
+        return self._process(demand)
 
     def predict_order(self, order_num: torch.Tensor):
         x = torch.tensor(
             [
+                self._id,
                 self.stock,
                 order_num,
                 self._selling_price,
@@ -173,9 +161,8 @@ class Saler(nn.Module):
             dtype=torch.float,
         ).to(DEVICE)
         out, _ = self.lstm(x.view(1, -1))
-        out = self.linear(out).view(-1)
-        out = self.relu(out)
-        return out * DEMAND_RANGE[1]
+        out = self.fc(out).view(-1)
+        return out
 
     @property
     def stocker(self):
@@ -189,14 +176,24 @@ class Saler(nn.Module):
     def profit(self):
         return self._profit
 
+    @property
+    def _next(self):
+        return self._p_n[0]
+
+    @property
+    def _prev(self):
+        return self._p_n[1]
+
 
 class SupplyChain(nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        salers = [Saler(next=None, **config).to(DEVICE) for config in CONFIGS]
+        salers = [Saler(**config).to(DEVICE) for config in CONFIGS]
         for i in range(len(salers)):
-            salers[i]._next = salers[i + 1] if i + 1 != len(salers) else None
+            salers[i]._p_n.append(salers[i + 1] if i + 1 != len(salers) else None)
+            salers[i]._p_n.append(salers[i - 1] if i != 0 else None)
         self.salers = salers
+        self.head = nn.Sequential(*self.salers)
 
     def init(self):
         for saler in self.salers:
@@ -207,14 +204,10 @@ class SupplyChain(nn.Module):
 
     def forward(self, demands: torch.Tensor) -> torch.Tensor:
         for demand in demands:
-            order_form = OrderForm(None, demand)
-            self.salers[0](order_form=order_form)
+            self.head(demand)
             logging.debug('\n' + str(self))
             logging.debug(f"total profit: {self.total_profit.item():.2f}")
         return self.total_profit
-
-    def parameters(self, recurse: bool = True) -> Iterator[Parameter]:
-        return self.salers[0].parameters(recurse=recurse)
 
     @property
     def total_profit(self):

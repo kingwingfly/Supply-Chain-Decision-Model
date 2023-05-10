@@ -23,6 +23,6 @@ def new_dataloader(size, batch_size) -> DataLoader:
 
 
 if __name__ == "__main__":
-    ds = DataSet()
-    for i in ds:
+    dl = new_dataloader(13, 12)
+    for i in dl:
         print(i)

@@ -8,12 +8,12 @@ import os
 from conf import DEVICE
 import math
 
-BATCH_SIZE = 12
-DATA_SIZE = 360
-TOTAL_EPOCH = 30
+BATCH_SIZE = 8
+DATA_SIZE = 120
+TOTAL_EPOCH = 10
 LR = 1e-3
 
-PRE_TRAINED = False
+PRE_TRAINED = True
 
 
 def main():
@@ -26,13 +26,13 @@ def main():
     optimizer = torch.optim.Adam(sc.parameters(), lr=LR)
     max_avg_profit = 0
     best_model = {}
-    for epoch_num in range(TOTAL_EPOCH):
+    for epoch_num in range(1, TOTAL_EPOCH + 1):
         profits = 0
         sc.train()
         for batch_id, demands in enumerate(train_dl):
             total_profit = sc(demands)
             profits += total_profit.item()
-            loss = loss_fn(total_profit)
+            loss: torch.Tensor = loss_fn(total_profit)
             # loss = loss_fn(sc.salers[0]._profit)
             plt.scatter(epoch_num, loss.item(), c="black", s=3)
             optimizer.zero_grad()
@@ -42,6 +42,7 @@ def main():
             logging.info(
                 f"epoch num: {epoch_num}\t batch_id: {batch_id}, total_profit: {total_profit.item():.2f}\t loss: {loss.item():.4f}"
             )
+            save_config()
 
         avg_profit = profits / (math.ceil(DATA_SIZE / BATCH_SIZE))
         logging.info(f"epoch num: {epoch_num}\t avg_profit: {avg_profit:.2f}")
@@ -52,25 +53,27 @@ def main():
         logging.info(f"epoch num: {epoch_num}\t max_avg_profit: {max_avg_profit:.2f}")
         print(f"epoch_num: {epoch_num}\t max_avg_profit: {max_avg_profit:.2f}")
 
-        sc.eval()
-        profits = 0
-        for _, demands in enumerate(valid_dl):
-            total_profit = sc(demands)
-            profits += total_profit.item()
-            sc.init()
-        print(f"valid avg_profit: {profits / math.ceil(DATA_SIZE / BATCH_SIZE):.2f}")
+        # sc.eval()
+        # profits = 0
+        # for _, demands in enumerate(valid_dl):
+        #     total_profit = sc(demands)
+        #     profits += total_profit.item()
+        #     sc.init()
+        # print(f"valid avg_profit: {profits / math.ceil(DATA_SIZE / BATCH_SIZE):.2f}")
 
     if 'y' == input("save model?[y/N]\t").strip().lower():
-        save(best_model)
+        save_model(best_model)
 
 
-def save(best_model):
+def save_model(best_model):
     if not os.path.exists("./models"):
         os.makedirs("./models")
-    torch.save(best_model, f"./models/weight.pth")
+    torch.save(best_model, "./models/weight.pth")
     logging.info("models saved")
-    plt.savefig("./losses.png")
-    logging.info("losses saved")
+
+
+def save_config():
+    plt.savefig("./static/losses.png")
 
 
 if __name__ == '__main__':
