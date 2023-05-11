@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Iterator
 import torch
 import logging
 from torch import nn
@@ -74,7 +73,7 @@ class Saler(nn.Module):
 
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
-            torch.nn.init.xavier_uniform_(module.weight, gain=50)
+            torch.nn.init.xavier_normal_(module.weight, gain=50)
             if module.bias is not None:
                 module.bias.data.zero_()
 

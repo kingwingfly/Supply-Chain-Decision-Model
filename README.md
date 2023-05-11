@@ -48,6 +48,7 @@
       <ul>
         <li><a href="#prerequisites">Prerequisites</a></li>
         <li><a href="#quick-start">Quick Start</a></li>
+        <li><a href="#predict">Predict</a></li>
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
@@ -105,7 +106,7 @@ And maybe you need this [torch quick start](https://pytorch.org/get-started/loca
    git clone https://github.com/kingwingfly/Supply-Chain-Decision-Model.git
    cd Supply-Chain-Decision-Model
    ```
-2. Prepare the environment (only for those use conda, if you do not, solve by yourself)
+2. Prepare the environment (only for those using conda, if you do not, solve by yourself)
    ```sh
    conda create -n torch python=3.10
    conda activate torch
@@ -119,15 +120,42 @@ And maybe you need this [torch quick start](https://pytorch.org/get-started/loca
    python train.py OR python predict.py
    ```
 
-The loss image:
-<img align="center" src="static/losses example1.png" width="100%">
-<img align="center" src="static/losses example2.png" width="100%">
-<img align="center" src="static/losses example3.png" width="100%">
+In order to maximize the profit, we use loss function:
+```python
+loss_fn = lambda: x: -x
+```
+
+Here's the loss image:
+
+![losses example1](./static/losses%20example1.png)
+![losses example2](./static/losses%20example2.png)
+![losses example3](./static/losses%20example3.png)
 
 
 You can find the loss become more and more dispersed, while the average is greater. 
 Considering the results, the purpose of optimizing decision-making is achieved.
-Further, you could optimize the input (The data I test on is randomly uniform ditribution between 10 and 400) in more subtle way.
+Further, you could optimize the input (The data I test on is randomly uniform ditribution between 10 and 40) in more subtle way.
+
+For example, I generated random demands based on the sine function with a period of 12 months.
+![sin image](./static/sin.png)
+
+And use the model trained previous as pretrained weights, the result is:
+![losses2.1](./static/losses2.1.png)
+
+We can find the average profit is nearly 480.
+So use MSELOSS to make the profit approach 480. The loss image is:
+![losses2.2](./static/losses2.2.png)
+Although there is a shock, we only save the best state_dict. And train again based on it with greater target 500.
+The loss image is:
+![losses2.3](./static/losses2.3.png)
+
+Okay, the image looks not good. However, the model can really do something to some extent.
+
+### Predict
+Just set the model you want and run `predict.py`.
+You can input something in the terminal:
+![predict display](./static/predict.png)
+
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

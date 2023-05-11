@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from chain import SupplyChain
 import logging
-from dataset import new_dataloader
+from dataset import new_dataloader, new_sin_dataloader
 import matplotlib.pyplot as plt
 import os
 from conf import DEVICE
@@ -10,7 +10,7 @@ import math
 
 BATCH_SIZE = 12
 DATA_SIZE = 120
-TOTAL_EPOCH = 40
+TOTAL_EPOCH = 100
 LR = 1e-3
 
 PRE_TRAINED = True
@@ -20,20 +20,27 @@ def main():
     sc = SupplyChain().to(DEVICE)
     if PRE_TRAINED:
         sc.load_state_dict(torch.load("./models/weight.pth"))
-    train_dl = new_dataloader(DATA_SIZE, BATCH_SIZE)
-    valid_dl = new_dataloader(DATA_SIZE, BATCH_SIZE)
-    loss_fn = lambda x: -x
+    train_dl = new_sin_dataloader(DATA_SIZE, BATCH_SIZE)
+    valid_dl = new_sin_dataloader(DATA_SIZE, BATCH_SIZE)
+    # loss_fn = lambda x: -x
+    loss_fn = nn.MSELoss()
     optimizer = torch.optim.Adam(sc.parameters(), lr=LR)
     max_avg_profit = 0
     best_model = {}
+    lowest_losses = float("inf")
     for epoch_num in range(1, TOTAL_EPOCH + 1):
         profits = 0
+        losses = 0
         sc.train()
         for batch_id, demands in enumerate(train_dl):
             total_profit = sc(demands)
             profits += total_profit.item()
-            loss: torch.Tensor = loss_fn(total_profit)
+            # loss: torch.Tensor = loss_fn(total_profit)
+            loss: torch.Tensor = loss_fn(
+                total_profit, torch.tensor([500], dtype=torch.float, device="cuda")
+            )
             # loss = loss_fn(sc.salers[0]._profit)
+            losses += loss.item()
             plt.scatter(epoch_num, loss.item(), c="black", s=3)
             optimizer.zero_grad()
             loss.backward()
@@ -46,20 +53,26 @@ def main():
 
         avg_profit = profits / (math.ceil(DATA_SIZE / BATCH_SIZE))
         logging.info(f"epoch num: {epoch_num}\t avg_profit: {avg_profit:.2f}")
-        print(f"epoch num: {epoch_num}\t avg_profit: {avg_profit:.2f}")
+        print(f"epoch num: {epoch_num}\t avg_profit: {avg_profit:.2f}, losses: {losses:.2f}")
         if avg_profit > max_avg_profit:
             max_avg_profit = avg_profit
+        if losses < lowest_losses:
+            lowest_losses = losses
             best_model = sc.state_dict()
-        logging.info(f"epoch num: {epoch_num}\t max_avg_profit: {max_avg_profit:.2f}")
-        print(f"epoch_num: {epoch_num}\t max_avg_profit: {max_avg_profit:.2f}")
+        logging.info(
+            f"epoch num: {epoch_num}\t max_avg_profit: {max_avg_profit:.2f}, lowest_losses: {lowest_losses:.2f}"
+        )
+        print(
+            f"epoch_num: {epoch_num}\t max_avg_profit: {max_avg_profit:.2f}, lowest_losses: {lowest_losses:.2f}"
+        )
 
-        sc.eval()
-        profits = 0
-        for _, demands in enumerate(valid_dl):
-            total_profit = sc(demands)
-            profits += total_profit.item()
-            sc.init()
-        print(f"valid avg_profit: {profits / math.ceil(DATA_SIZE / BATCH_SIZE):.2f}")
+        # sc.eval()
+        # profits = 0
+        # for _, demands in enumerate(valid_dl):
+        #     total_profit = sc(demands)
+        #     profits += total_profit.item()
+        #     sc.init()
+        # print(f"valid avg_profit: {profits / math.ceil(DATA_SIZE / BATCH_SIZE):.2f}")
 
     if 'y' == input("save model?[y/N]\t").strip().lower():
         save_model(best_model)

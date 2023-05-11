@@ -6,7 +6,7 @@ import torch
 if __name__ == "__main__":
     sc = SupplyChain().to(DEVICE)
     # init
-    sc.load_state_dict(torch.load(f"./models/weight.pth"))
+    sc.load_state_dict(torch.load(f"./pre_models/weight3.pth"))
     sc.eval()
 
     # predict
