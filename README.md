@@ -145,6 +145,7 @@ And use the model trained previous as pretrained weights, the result is:
 We can find the average profit is nearly 480.
 So use MSELOSS to make the profit approach 480. The loss image is:
 ![losses2.2](./static/losses2.2.png)
+
 Although there is a shock, we only save the best state_dict. And train again based on it with greater target 500.
 The loss image is:
 ![losses2.3](./static/losses2.3.png)
@@ -185,7 +186,6 @@ Don't forget to give the project a star! Thanks again!
 
 
 
-LICENSE -->
 ## License
 
 Distributed under the MIT License. See `LICENSE.txt` for more information.
@@ -208,7 +208,7 @@ Project Link: [https://github.com/kingwingfly/Supply-Chain-Decision-Model](https
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-Some document may help in develop tauri app and crawler.
+Some document may help.
 
 * [Python Documentation](https://docs.python.org/3/)
 * [Torch Tutorials](https://pytorch.org/tutorials/)
