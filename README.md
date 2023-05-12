@@ -133,8 +133,9 @@ Here's the loss image:
 
 
 You can find the loss become more and more dispersed, while the average is greater. 
+
 Considering the results, the purpose of optimizing decision-making is achieved.
-Further, you could optimize the input (The data I test on is randomly uniform ditribution between 10 and 40) in more subtle way.
+Further, you could optimize the input (The data I test on is randomly uniform distribution between 10 and 40) in more subtle way.
 
 For example, I generated random demands based on the sine function with a period of 12 months.
 ![sin image](./static/sin.png)
@@ -174,6 +175,7 @@ See the [open issues](https://github.com/kingwingfly/Supply-Chain-Decision-Model
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
 If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+
 Don't forget to give the project a star! Thanks again!
 
 1. Fork the Project
