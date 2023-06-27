@@ -110,9 +110,9 @@ And maybe you need this [torch quick start](https://pytorch.org/get-started/loca
    ```sh
    conda create -n torch python=3.10
    conda activate torch
-
+   
    # then install torch
-
+   
    pip install -r requirements.txt  # I did not test, solve by your self if things went wrong
    ```
 3. start train or predict
@@ -159,17 +159,16 @@ Okay, the image looks not good. However, the model can really do something to so
 
 ### Predict
 Just set the model you want and run `predict.py`.
-You can input Licensed under the Apache License, Version 2.0 (the "License");具体有什么限制something in the terminaLicensed under the Apache License, Version 2.0 (the "License");具体有什么限制l:
+You can input the real demand, and the model will give the quatity you should order this moment.
 
 ![predict display](./static/predict.png)
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- ROADMAP -->Licensed under the Apache License, Version 2.0 (the "License");具体有什么限制
-## Roadmap
-- [Licensed under the Apache License, Version 2.0 (the "License");具体有什么限制 ] NONE
+<!-- ROADMAP -->
 
+## Roadmap
 See the [open issues](https://github.com/kingwingfly/Supply-Chain-Decision-Model/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
